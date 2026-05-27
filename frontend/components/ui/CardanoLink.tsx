@@ -1,9 +1,12 @@
+"use client";
+
 // CardanoLink — öffnet preprod.cardanoscan.io für TX, Adresse oder Script.
 // Verwendung:
 //   <CardanoLink type="tx"      value={txHash} />
 //   <CardanoLink type="address" value={walletAddress} label="Wallet ansehen" />
 //   <CardanoLink type="script"  value={scriptAddress} label="Script" />
 
+import { motion } from "framer-motion";
 import Icon from "./Icon";
 
 type CardanoLinkType = "tx" | "address" | "script";
@@ -59,9 +62,11 @@ export default function CardanoLink({
 
   if (variant === "inline") {
     return (
-      <span
+      <motion.span
         onClick={() => openCardano(type, value)}
         title={value}
+        whileHover={{ x: 2 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
         style={{
           cursor: "pointer",
           color: c.fg,
@@ -76,21 +81,29 @@ export default function CardanoLink({
         }}
       >
         {truncated}
-        <Icon name="arrowRight" size={10} />
-      </span>
+        <motion.span
+          animate={{ x: [0, 2, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Icon name="arrowRight" size={10} />
+        </motion.span>
+      </motion.span>
     );
   }
 
   return (
-    <button
+    <motion.button
       className="row-act"
       style={{ background: c.bg, color: c.fg, borderColor: c.border }}
       onClick={() => openCardano(type, value)}
       title={value}
+      whileHover={{ scale: 1.04, y: -1 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
     >
       <Icon name="arrowRight" size={11} />
       {displayLabel}
-    </button>
+    </motion.button>
   );
 }
 
@@ -103,7 +116,10 @@ interface TxBadgeProps {
 
 export function TxBadge({ txHash, label }: TxBadgeProps) {
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.02, borderColor: "rgba(99,102,241,.35)" }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -126,7 +142,7 @@ export function TxBadge({ txHash, label }: TxBadgeProps) {
         </span>
       )}
       <Icon name="arrowRight" size={10} style={{ color: "var(--ind)" }} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -138,8 +154,11 @@ interface ScriptCardProps {
 
 export function ScriptAddressCard({ address, loading }: ScriptCardProps) {
   return (
-    <div
+    <motion.div
       className="card"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       style={{
         padding: "14px 16px",
         display: "flex",
@@ -148,7 +167,9 @@ export function ScriptAddressCard({ address, loading }: ScriptCardProps) {
         marginBottom: 14,
       }}
     >
-      <div
+      <motion.div
+        whileHover={{ scale: 1.1, rotate: 5 }}
+        transition={{ type: "spring", stiffness: 400, damping: 15 }}
         style={{
           width: 36,
           height: 36,
@@ -162,7 +183,7 @@ export function ScriptAddressCard({ address, loading }: ScriptCardProps) {
         }}
       >
         <Icon name="shield" size={17} />
-      </div>
+      </motion.div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -178,7 +199,7 @@ export function ScriptAddressCard({ address, loading }: ScriptCardProps) {
           Referral Registry · Smart Contract
         </div>
         {loading ? (
-          <span style={{ fontSize: 11, color: "var(--t3)" }}>Lade Script-Adresse…</span>
+          <div className="skeleton" style={{ height: 14, width: "60%", borderRadius: 4 }} />
         ) : address ? (
           <span
             style={{
@@ -200,16 +221,19 @@ export function ScriptAddressCard({ address, loading }: ScriptCardProps) {
 
       {address && (
         <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
-          <button
+          <motion.button
             className="btn btn-gho btn-sm"
             onClick={() => navigator.clipboard.writeText(address)}
             title="Adresse kopieren"
+            whileHover={{ scale: 1.04, y: -1 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
           >
             <Icon name="check" size={12} /> Kopieren
-          </button>
+          </motion.button>
           <CardanoLink type="script" value={address} label="Cardanoscan" />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

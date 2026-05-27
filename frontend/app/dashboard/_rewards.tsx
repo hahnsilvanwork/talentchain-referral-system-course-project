@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Icon from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { scenarioLabel, chf } from "@/lib/scenarios";
@@ -33,6 +34,18 @@ function timeAgo(blockTime: number): string {
   return "gerade eben";
 }
 
+function SkeletonRow() {
+  return (
+    <tr>
+      {[...Array(6)].map((_, i) => (
+        <td key={i} style={{ padding: "14px 16px" }}>
+          <div className="skeleton skeleton-text" style={{ width: i === 0 ? 120 : 70 }} />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 export function RewardHistory() {
   const [data, setData] = useState<{
     walletAddress: string;
@@ -49,8 +62,27 @@ export function RewardHistory() {
 
   if (loading) {
     return (
-      <div className="card" style={{ padding: 24, textAlign: "center" }}>
-        <p style={{ color: "var(--t3)", fontSize: 12.5 }}>Lade Reward History…</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Wallet card skeleton */}
+        <div className="card" style={{ padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="skeleton" style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton skeleton-text" style={{ width: 80, marginBottom: 8 }} />
+            <div className="skeleton skeleton-text" style={{ width: "60%" }} />
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div className="card" style={{ overflow: "hidden" }}>
+          <div style={{ padding: "13px 16px", borderBottom: "1px solid var(--line)", background: "var(--bg-input)" }}>
+            <div className="skeleton skeleton-text" style={{ width: 140 }} />
+          </div>
+          <table className="tbl">
+            <thead><tr>
+              {["TX Hash","Talent","Szenario","Total Fee","Zeit","Link"].map(h => <th key={h}>{h}</th>)}
+            </tr></thead>
+            <tbody>{[...Array(3)].map((_, i) => <SkeletonRow key={i} />)}</tbody>
+          </table>
+        </div>
       </div>
     );
   }
@@ -69,11 +101,31 @@ export function RewardHistory() {
   const allTxs = data.history;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      style={{ display: "flex", flexDirection: "column", gap: 14 }}
+    >
       {/* Wallet Info */}
-      <div className="card" style={{ padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(99,102,241,.15)", color: "var(--ind)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card"
+        style={{ padding: 16, display: "flex", alignItems: "center", gap: 12 }}
+      >
+        <div style={{
+          width: 38,
+          height: 38,
+          borderRadius: 10,
+          background: "rgba(99,102,241,.15)",
+          color: "var(--ind)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          boxShadow: "0 0 0 1px rgba(99,102,241,0.15)",
+        }}>
           <Icon name="wallet" size={17} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -83,23 +135,37 @@ export function RewardHistory() {
           </div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--disp)", color: "var(--em)" }}>
+          <motion.div
+            key={talentchainTxs.length}
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--disp)", color: "var(--em)" }}
+          >
             {talentchainTxs.length}
-          </div>
-          <div style={{ fontSize: 10, color: "var(--t3)", fontFamily: "var(--mono)" }}>
-            TalentChain TXs
-          </div>
+          </motion.div>
+          <div style={{ fontSize: 10, color: "var(--t3)", fontFamily: "var(--mono)" }}>TalentChain TXs</div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* TalentChain Rewards */}
-      <div className="card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "13px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
+      {/* TalentChain Rewards table */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="card"
+        style={{ overflow: "hidden" }}
+      >
+        <div style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid var(--line)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: "var(--bg-input)",
+        }}>
           <span style={{ color: "var(--em)" }}><Icon name="coin" size={15} /></span>
           <span style={{ fontFamily: "var(--disp)", fontSize: 13, fontWeight: 600 }}>TalentChain Rewards</span>
-          <span style={{ fontSize: 10, fontFamily: "var(--mono)", color: "var(--t3)", background: "var(--bg-card)", border: "1px solid var(--line)", padding: "2px 8px", borderRadius: 6, marginLeft: 4 }}>
-            {talentchainTxs.length} TOTAL
-          </span>
+          <span className="sec-count" style={{ marginLeft: 4 }}>{talentchainTxs.length} TOTAL</span>
         </div>
 
         {talentchainTxs.length === 0 ? (
@@ -121,49 +187,69 @@ export function RewardHistory() {
               </tr>
             </thead>
             <tbody>
-              {talentchainTxs.map((item) => (
-                <tr key={item.txHash}>
-                  <td style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--t2)" }}>
-                    {item.txHash.slice(0, 12)}…{item.txHash.slice(-6)}
-                  </td>
-                  <td style={{ fontSize: 11.5, color: "var(--t1)" }}>
-                    {item.matchEvent?.talent}
-                  </td>
-                  <td>
-                    <span style={{ fontSize: 9.5, fontFamily: "var(--mono)", color: "var(--t2)", background: "var(--bg-input)", border: "1px solid var(--line)", padding: "3px 8px", borderRadius: 6 }}>
-                      {scenarioLabel(item.matchEvent?.scenario || "")}
-                    </span>
-                  </td>
-                  <td style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--em)", fontWeight: 700 }}>
-                    {chf(item.matchEvent?.totalFee || 0)}
-                  </td>
-                  <td style={{ fontSize: 10.5, color: "var(--t4)", fontFamily: "var(--mono)" }}>
-                    {timeAgo(item.blockTime)}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <button
-                      className="row-act"
-                      style={{ background: "rgba(99,102,241,.1)", color: "var(--ind)", borderColor: "rgba(99,102,241,.2)" }}
-                      onClick={() => openTx(item.txHash)}
-                    >
-                      <Icon name="arrowRight" size={11} /> Cardanoscan
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              <AnimatePresence>
+                {talentchainTxs.map((item, idx) => (
+                  <motion.tr
+                    key={item.txHash}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                  >
+                    <td style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--t2)" }}>
+                      {item.txHash.slice(0, 12)}…{item.txHash.slice(-6)}
+                    </td>
+                    <td style={{ fontSize: 11.5, color: "var(--t1)" }}>
+                      {item.matchEvent?.talent}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 9.5, fontFamily: "var(--mono)", color: "var(--t2)", background: "var(--bg-input)", border: "1px solid var(--line)", padding: "3px 8px", borderRadius: 6 }}>
+                        {scenarioLabel(item.matchEvent?.scenario || "")}
+                      </span>
+                    </td>
+                    <td style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--em)", fontWeight: 700 }}>
+                      {chf(item.matchEvent?.totalFee || 0)}
+                    </td>
+                    <td style={{ fontSize: 10.5, color: "var(--t4)", fontFamily: "var(--mono)" }}>
+                      {timeAgo(item.blockTime)}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <motion.button
+                        className="row-act"
+                        style={{ background: "rgba(99,102,241,.1)", color: "var(--ind)", borderColor: "rgba(99,102,241,.2)" }}
+                        onClick={() => openTx(item.txHash)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Icon name="arrowRight" size={11} /> Cardanoscan
+                      </motion.button>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         )}
-      </div>
+      </motion.div>
 
-      {/* Alle TX History */}
-      <div className="card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "13px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
+      {/* All TX History */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.14 }}
+        className="card"
+        style={{ overflow: "hidden" }}
+      >
+        <div style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid var(--line)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: "var(--bg-input)",
+        }}>
           <span style={{ color: "var(--vio)" }}><Icon name="clock" size={15} /></span>
           <span style={{ fontFamily: "var(--disp)", fontSize: 13, fontWeight: 600 }}>Alle Transaktionen</span>
-          <span style={{ fontSize: 10, fontFamily: "var(--mono)", color: "var(--t3)", background: "var(--bg-card)", border: "1px solid var(--line)", padding: "2px 8px", borderRadius: 6, marginLeft: 4 }}>
-            {allTxs.length} TOTAL
-          </span>
+          <span className="sec-count" style={{ marginLeft: 4 }}>{allTxs.length} TOTAL</span>
         </div>
 
         {allTxs.length === 0 ? (
@@ -183,8 +269,13 @@ export function RewardHistory() {
               </tr>
             </thead>
             <tbody>
-              {allTxs.map((item) => (
-                <tr key={item.txHash}>
+              {allTxs.map((item, idx) => (
+                <motion.tr
+                  key={item.txHash}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                >
                   <td style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--t2)" }}>
                     {item.txHash.slice(0, 16)}…{item.txHash.slice(-8)}
                   </td>
@@ -199,20 +290,22 @@ export function RewardHistory() {
                     {timeAgo(item.blockTime)}
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button
+                    <motion.button
                       className="row-act"
                       style={{ background: "rgba(99,102,241,.1)", color: "var(--ind)", borderColor: "rgba(99,102,241,.2)" }}
                       onClick={() => openTx(item.txHash)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Icon name="arrowRight" size={11} /> TX
-                    </button>
+                    </motion.button>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
