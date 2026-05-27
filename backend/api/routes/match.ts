@@ -21,11 +21,7 @@ router.post("/calculate", async (req: Request, res: Response) => {
     }
 
     const fees = calculateFees(annualSalary, scenario);
-
-    const mockChain = [
-      { walletPkh: talent.walletPkh, inviterPkh: null, layer: 0 },
-    ];
-
+    const mockChain = [{ walletPkh: talent.walletPkh, inviterPkh: null, layer: 0 }];
     const rewards = calculateRewards(fees.referrerPool, mockChain);
 
     res.json({
@@ -73,11 +69,7 @@ router.post("/create", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({
-      matchEvent,
-      fees,
-      message: "Match-Event erstellt",
-    });
+    res.json({ matchEvent, fees, message: "Match-Event erstellt" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server Fehler" });
@@ -110,6 +102,34 @@ router.get("/events", async (req: Request, res: Response) => {
     });
 
     res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: "Server Fehler" });
+  }
+});
+
+// POST /api/match/cancel/:id
+router.post("/cancel/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
+
+    const event = await prisma.matchEvent.findUnique({ where: { id } });
+
+    if (!event) {
+      res.status(404).json({ error: "Match-Event nicht gefunden" });
+      return;
+    }
+
+    if (event.status !== "PENDING") {
+      res.status(400).json({ error: "Nur PENDING Events können storniert werden" });
+      return;
+    }
+
+    await prisma.matchEvent.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+    });
+
+    res.json({ success: true, message: "Match-Event storniert" });
   } catch (error) {
     res.status(500).json({ error: "Server Fehler" });
   }
