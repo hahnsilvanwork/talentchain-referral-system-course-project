@@ -1,10 +1,11 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../prisma/client";
 import { calculateFees, calculateRewards } from "../../chain/referral-traversal";
+import { AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
-// POST /api/match/calculate
+// POST /api/match/calculate — alle eingeloggten User
 router.post("/calculate", async (req: Request, res: Response) => {
   try {
     const { talentId, annualSalary, scenario } = req.body;
@@ -42,10 +43,21 @@ router.post("/calculate", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/match/create
-router.post("/create", async (req: Request, res: Response) => {
+// POST /api/match/create — nur ADMIN
+router.post("/create", async (req: AuthRequest, res: Response) => {
   try {
+    // Rollenprüfung — nur ADMIN darf Events erstellen
+    if (req.userRole !== "ADMIN") {
+      res.status(403).json({ error: "Nur Admins können Match-Events erstellen" });
+      return;
+    }
+
     const { talentId, annualSalary, scenario } = req.body;
+
+    if (!talentId || !annualSalary || !scenario) {
+      res.status(400).json({ error: "talentId, annualSalary, scenario erforderlich" });
+      return;
+    }
 
     const talent = await prisma.user.findUnique({ where: { id: talentId } });
     if (!talent) {
@@ -76,27 +88,14 @@ router.post("/create", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/match/events
-router.get("/events", async (req: Request, res: Response) => {
+// GET /api/match/events — alle eingeloggten User (gefiltert nach Rolle)
+router.get("/events", async (req: AuthRequest, res: Response) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    let userId: string | null = null;
-    let userRole: string = "USER";
-
-    if (token) {
-      try {
-        const jwt = await import("jsonwebtoken");
-        const decoded = jwt.default.verify(
-          token,
-          process.env.JWT_SECRET || "secret"
-        ) as { userId: string; role: string };
-        userId = decoded.userId;
-        userRole = decoded.role;
-      } catch {}
-    }
+    const userId = req.userId || "";
+    const userRole = req.userRole || "USER";
 
     const events = await prisma.matchEvent.findMany({
-      where: userRole === "ADMIN" ? {} : { talentId: userId || "" },
+      where: userRole === "ADMIN" ? {} : { talentId: userId },
       include: { talent: { select: { email: true, walletAddress: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -107,18 +106,21 @@ router.get("/events", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/match/cancel/:id
-router.post("/cancel/:id", async (req: Request, res: Response) => {
+// POST /api/match/cancel/:id — nur ADMIN
+router.post("/cancel/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const id = req.params["id"] as string;
+    if (req.userRole !== "ADMIN") {
+      res.status(403).json({ error: "Nur Admins können Events stornieren" });
+      return;
+    }
 
+    const id = req.params["id"] as string;
     const event = await prisma.matchEvent.findUnique({ where: { id } });
 
     if (!event) {
       res.status(404).json({ error: "Match-Event nicht gefunden" });
       return;
     }
-
     if (event.status !== "PENDING") {
       res.status(400).json({ error: "Nur PENDING Events können storniert werden" });
       return;

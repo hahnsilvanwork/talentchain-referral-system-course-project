@@ -20,15 +20,15 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", network: process.env.CARDANO_NETWORK });
 });
 
-// Public routes (kein Token nötig)
+// Public routes — kein Token nötig
 app.use("/api/auth", authRoutes);
 
-// User routes (Token nötig)
+// User routes — Token nötig
 app.use("/api/match", authMiddleware, matchRoutes);
 app.use("/api/rewards", authMiddleware, rewardRoutes);
 app.use("/api/referral", authMiddleware, referralRoutes);
 
-// Admin routes (Token + ADMIN Rolle nötig)
+// Admin routes — Token + ADMIN Rolle nötig
 app.use("/api/admin", authMiddleware, adminMiddleware, adminRoutes);
 
 app.listen(PORT, () => {
