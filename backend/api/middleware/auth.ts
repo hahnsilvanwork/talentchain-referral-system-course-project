@@ -6,6 +6,10 @@ export interface AuthRequest extends Request {
   userRole?: string;
 }
 
+/**
+ * Prüft ob ein gültiger JWT-Token im Authorization Header vorhanden ist.
+ * Setzt req.userId und req.userRole für nachfolgende Handler.
+ */
 export function authMiddleware(
   req: AuthRequest,
   res: Response,
@@ -29,4 +33,20 @@ export function authMiddleware(
   } catch {
     res.status(401).json({ error: "Ungültiger Token" });
   }
+}
+
+/**
+ * Prüft ob der eingeloggte User die ADMIN-Rolle hat.
+ * Muss NACH authMiddleware eingesetzt werden.
+ */
+export function adminMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  if (req.userRole !== "ADMIN") {
+    res.status(403).json({ error: "Keine Admin-Berechtigung" });
+    return;
+  }
+  next();
 }

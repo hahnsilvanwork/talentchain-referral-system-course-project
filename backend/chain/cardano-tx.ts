@@ -17,11 +17,68 @@ function hashTransactionBody(txBody: CSL.TransactionBody): CSL.TransactionHash {
   return CSL.TransactionHash.from_bytes(hash);
 }
 
-export async function buildAndSubmitTx(payments: Payment[]): Promise<string> {
+/**
+ * Gibt spendbare UTxOs für das Admin-Wallet zurück.
+ *
+ * Wenn lastTxHash angegeben: Change-Output dieser TX direkt lesen.
+ * Das ist der zuverlässigste Weg — kein Blockfrost-Cache-Problem möglich.
+ * Fallback: addressesUtxos() (kann kurz nach TX-Submit veraltete Daten haben).
+ */
+async function getSpendableUtxos(
+  address: string,
+  lastTxHash?: string
+): Promise<{ tx_hash: string; output_index: number; amount: { unit: string; quantity: string }[] }[]> {
+
+  if (lastTxHash) {
+    try {
+      const txUtxos = await blockfrost.txsUtxos(lastTxHash);
+
+      // FIX: realIdx ist der echte Output-Index im TX — .map((o, idx)) würde
+      // den Filter-Index (0,1,2...) liefern, nicht den echten TX-Output-Index.
+      // Deswegen zuerst mappen, dann filtern.
+      const adminOutputs = txUtxos.outputs
+        .map((o, realIdx) => ({ o, realIdx }))
+        .filter(({ o }) => o.address === address)
+        .map(({ o, realIdx }) => ({
+          tx_hash: lastTxHash,
+          output_index: realIdx,
+          amount: o.amount,
+        }));
+
+      if (adminOutputs.length > 0) {
+        console.log(`  Nutze Change-Output aus TX ${lastTxHash.slice(0, 16)}... (${adminOutputs.length} UTxO(s))`);
+        return adminOutputs;
+      }
+    } catch (e) {
+      console.warn(`  txsUtxos(${lastTxHash.slice(0, 16)}...) fehlgeschlagen:`, e);
+    }
+  }
+
+  console.log(`  Nutze addressesUtxos() als Fallback`);
+  const allUtxos = await blockfrost.addressesUtxos(address);
+  return allUtxos.map((u) => ({
+    tx_hash: u.tx_hash,
+    output_index: u.output_index,
+    amount: u.amount,
+  }));
+}
+
+/**
+ * Baut und submitted eine Cardano TX mit den angegebenen Payments.
+ *
+ * @param payments    Empfänger + Beträge in Lovelace
+ * @param lastTxHash  Optionaler TX-Hash der letzten Admin-TX — wenn
+ *                    angegeben wird dessen Change-Output direkt als
+ *                    Input verwendet (verhindert UTxO-Race-Conditions)
+ */
+export async function buildAndSubmitTx(
+  payments: Payment[],
+  lastTxHash?: string
+): Promise<string> {
   const wallet = getAdminWallet();
   const adminAddress = wallet.address;
 
-  const utxos = await blockfrost.addressesUtxos(adminAddress);
+  const utxos = await getSpendableUtxos(adminAddress, lastTxHash);
   if (utxos.length === 0) throw new Error("Keine UTxOs gefunden");
 
   const protocolParams = await blockfrost.epochsLatestParameters();
@@ -44,7 +101,6 @@ export async function buildAndSubmitTx(payments: Payment[]): Promise<string> {
 
   const txBuilder = CSL.TransactionBuilder.new(txBuilderConfig);
 
-  // Alle UTxOs als Input hinzufügen
   for (const utxo of utxos) {
     const input = CSL.TransactionInput.new(
       CSL.TransactionHash.from_hex(utxo.tx_hash),

@@ -17,8 +17,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const ADMIN_ADDRESS =
-  "addr_test1qptplewuhhdzmjh08wt5qhqlkk3h77cqgh4gxwxguu0z8uj32j084fmnqfv6p7wl9gcre3lj39x63q0sx8a876r7ne0smhzn0s";
+// FIX: ADMIN_ADDRESS kommt aus der .env, nicht hardcoded
+// Setzt voraus: ADMIN_ADDRESS=addr_test1... in .env
+function getAdminAddress(): string {
+  const addr = process.env.ADMIN_ADDRESS;
+  if (!addr) throw new Error("ADMIN_ADDRESS nicht in .env gesetzt");
+  return addr;
+}
 
 async function getLucid() {
   const lucid = await Lucid(
@@ -90,6 +95,7 @@ export async function mintIdentityNft(
   const lucid = await getLucid();
   const mintingPolicy = getMintingPolicy();
   const policyId = mintingPolicyToId(mintingPolicy);
+  const adminAddress = getAdminAddress();
 
   console.log("Policy ID:", policyId);
   console.log("Minting NFT fuer:", recipientAddress);
@@ -103,7 +109,7 @@ export async function mintIdentityNft(
     .mintAssets({ [unit]: 1n }, redeemer)
     .attach.MintingPolicy(mintingPolicy)
     .pay.ToAddress(recipientAddress, { [unit]: 1n })
-    .addSigner(ADMIN_ADDRESS)
+    .addSigner(adminAddress)
     .complete();
 
   const txHash = await signAndSubmit(tx.toCBOR());

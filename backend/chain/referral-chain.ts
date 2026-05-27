@@ -311,10 +311,37 @@ export async function getDownlineOnChain(
  * In der Produktion: beide Parteien (inviter + invitee) müssen signieren.
  * Für den Admin-Flow: Admin signiert stellvertretend.
  */
+/**
+ * Liest die Admin-Change-Outputs direkt aus einer TX via Blockfrost
+ * und konvertiert sie ins Lucid UTxO-Format.
+ * Damit umgehen wir den Blockfrost addressesUtxos() Cache.
+ */
+async function getUtxosFromTxForLucid(
+  txHash: string,
+  adminAddress: string
+): Promise<any[]> {
+  const txUtxos = await blockfrost.txsUtxos(txHash);
+  return txUtxos.outputs
+    .map((o, realIdx) => ({ o, realIdx }))
+    .filter(({ o }) => o.address === adminAddress)
+    .map(({ o, realIdx }) => ({
+      txHash,
+      outputIndex: realIdx,
+      address: o.address,
+      assets: o.amount.reduce((acc: Record<string, bigint>, a) => {
+        acc[a.unit] = BigInt(a.quantity);
+        return acc;
+      }, {}),
+      datum: null,
+      scriptRef: null,
+    }));
+}
+
 export async function createReferralUtxo(
   inviterPkh: string | null,
   inviteePkh: string,
-  identityNft: string
+  identityNft: string,
+  lastTxHash?: string   // TX-Hash der vorherigen Admin-TX (NFT Mint)
 ): Promise<string> {
   const lucid = await Lucid(
     new Blockfrost(
@@ -325,13 +352,26 @@ export async function createReferralUtxo(
   );
   lucid.selectWallet.fromSeed(process.env.ADMIN_SEED_PHRASE || "");
 
+  const adminAddress = await lucid.wallet().address();
+
+  // Wenn lastTxHash bekannt: dessen Change-Output direkt als UTxO-Set setzen
+  // → Lucid verwendet garantiert den frischen Output, kein Cache-Problem
+  if (lastTxHash) {
+    try {
+      const freshUtxos = await getUtxosFromTxForLucid(lastTxHash, adminAddress);
+      if (freshUtxos.length > 0) {
+        console.log(`  Lucid: nutze ${freshUtxos.length} UTxO(s) aus TX ${lastTxHash.slice(0, 16)}...`);
+        lucid.overrideUTxOs(freshUtxos);
+      }
+    } catch (e) {
+      console.warn(`  Lucid UTxO-Override fehlgeschlagen, nutze Standard:`, e);
+    }
+  }
+
   const scriptAddress = await getReferralScriptAddress();
   const now = Date.now();
   const twoYearsMs = 2 * 365 * 24 * 60 * 60 * 1000;
 
-  // ReferralDatum als Plutus Data bauen
-  // Schema: Constr 0 [ Option<Bytes>, Bytes, Bytes, Int, Int ]
-  // Option<Bytes>: Constr 0 [pkh] = Some(pkh) | Constr 1 [] = None
   const datum = Data.to(
     new Constr(0, [
       inviterPkh !== null
@@ -343,8 +383,6 @@ export async function createReferralUtxo(
       BigInt(now + twoYearsMs),
     ])
   );
-
-  const adminAddress = await lucid.wallet().address();
 
   const tx = await lucid
     .newTx()
