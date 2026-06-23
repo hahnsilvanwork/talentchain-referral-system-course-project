@@ -380,15 +380,15 @@ Damit das Referral-System funktioniert, braucht es mindestens einen **L1 Ambassa
 
 | Variable | Pflicht | Beschreibung |
 |---|---|---|
-| `BLOCKFROST_API_KEY` | ✅ | API Key von blockfrost.io (Preprod) |
-| `CARDANO_NETWORK` | ✅ | Immer `preprod` |
-| `ADMIN_SEED_PHRASE` | ✅ | 24-Wörter Seed Phrase des Admin-Wallets |
-| `ADMIN_ADDRESS` | ✅ | Bech32-Adresse des Admin-Wallets (`addr_test1...`) |
-| `ADMIN_WALLET_PKH` | ✅ | Payment Key Hash (Hex) des Admin-Wallets |
-| `DATABASE_URL` | ✅ | PostgreSQL Connection String |
-| `JWT_SECRET` | ✅ | Geheimer Schlüssel für JWT Token (beliebig langer String) |
-| `PORT` | ✅ | Backend Port (Standard: `3001`) |
-| `FRONTEND_URL` | ✅ | URL des Frontends (Standard: `http://localhost:3000`) |
+| `BLOCKFROST_API_KEY` | ja | API Key von blockfrost.io (Preprod) |
+| `CARDANO_NETWORK` | ja | Immer `preprod` |
+| `ADMIN_SEED_PHRASE` | ja | 24-Wörter Seed Phrase des Admin-Wallets |
+| `ADMIN_ADDRESS` | ja | Bech32-Adresse des Admin-Wallets (`addr_test1...`) |
+| `ADMIN_WALLET_PKH` | ja | Payment Key Hash (Hex) des Admin-Wallets |
+| `DATABASE_URL` | ja | PostgreSQL Connection String |
+| `JWT_SECRET` | ja | Geheimer Schlüssel für JWT Token (beliebig langer String) |
+| `PORT` | ja | Backend Port (Standard: `3001`) |
+| `FRONTEND_URL` | ja | URL des Frontends (Standard: `http://localhost:3000`) |
 | `SEED_ADMIN_EMAIL` | nur Seed | E-Mail für seed-admin.ts Skript |
 | `SEED_ADMIN_PASSWORD` | nur Seed | Passwort für seed-admin.ts Skript |
 | `SEED_ADMIN_WALLET` | nur Seed | Wallet-Adresse für seed-admin.ts Skript |
