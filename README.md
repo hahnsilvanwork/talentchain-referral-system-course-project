@@ -1,76 +1,76 @@
 # TalentChain
 
-**Dezentrale Recruiting-Plattform auf der Cardano Blockchain**
+**Decentralized Recruiting Platform on the Cardano Blockchain**
 
-TalentChain verbindet reale Recruiting-Ereignisse (Stellenwechsel, Vertragsabschlüsse) mit Smart Contracts. Rewards werden automatisch und manipulationssicher an alle Mitglieder der Einladungskette ausbezahlt.
+TalentChain connects real recruiting events (job changes, contract signings) with smart contracts. Rewards are distributed automatically and tamper-proof to all members of the invitation chain.
 
-**Kernprinzip: Off-Chain berechnen — On-Chain verifizieren.**
+**Core Principle: Compute Off-Chain — Verify On-Chain.**
 
->Dieses Projekt läuft auf dem **Cardano Preprod Testnet**. Es wird kein echtes Geld bewegt.
-
----
-
-## Inhaltsverzeichnis
-
-- [Überblick](#überblick)
-- [Voraussetzungen](#voraussetzungen)
-- [Projektstruktur](#projektstruktur)
-- [Setup — Schritt für Schritt](#setup--schritt-für-schritt)
-  - [1. Repository klonen](#1-repository-klonen)
-  - [2. Abhängigkeiten installieren](#2-abhängigkeiten-installieren)
-  - [3. Cardano Wallet einrichten](#3-cardano-wallet-einrichten)
-  - [4. Blockfrost API Key holen](#4-blockfrost-api-key-holen)
-  - [5. Umgebungsvariablen konfigurieren](#5-umgebungsvariablen-konfigurieren)
-  - [6. Datenbank einrichten](#6-datenbank-einrichten)
-  - [7. Admin-Account erstellen](#7-admin-account-erstellen)
-  - [8. Smart Contracts deployen](#8-smart-contracts-deployen)
-  - [9. Backend starten](#9-backend-starten)
-  - [10. Frontend starten](#10-frontend-starten)
-- [Wallet für Browser einrichten](#wallet-für-browser-einrichten)
-- [Ersten L1 Ambassador erstellen](#ersten-l1-ambassador-erstellen)
-- [Umgebungsvariablen Referenz](#umgebungsvariablen-referenz)
-- [Technologie-Stack](#technologie-stack)
-- [Architektur](#architektur)
-- [Häufige Fehler](#häufige-fehler)
+> This project runs on the **Cardano Preprod Testnet**. No real money is involved.
 
 ---
 
-## Überblick
+## Table of Contents
 
-| Schicht | Technologie |
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Project Structure](#project-structure)
+- [Setup — Step by Step](#setup--step-by-step)
+  - [1. Clone the Repository](#1-clone-the-repository)
+  - [2. Install Dependencies](#2-install-dependencies)
+  - [3. Set Up the Cardano Wallet](#3-set-up-the-cardano-wallet)
+  - [4. Get a Blockfrost API Key](#4-get-a-blockfrost-api-key)
+  - [5. Configure Environment Variables](#5-configure-environment-variables)
+  - [6. Set Up the Database](#6-set-up-the-database)
+  - [7. Create the Admin Account](#7-create-the-admin-account)
+  - [8. Deploy Smart Contracts](#8-deploy-smart-contracts)
+  - [9. Start the Backend](#9-start-the-backend)
+  - [10. Start the Frontend](#10-start-the-frontend)
+- [Set Up a Browser Wallet](#set-up-a-browser-wallet)
+- [Create the First L1 Ambassador](#create-the-first-l1-ambassador)
+- [Environment Variables Reference](#environment-variables-reference)
+- [Technology Stack](#technology-stack)
+- [Architecture](#architecture)
+- [Common Errors](#common-errors)
+
+---
+
+## Overview
+
+| Layer | Technology |
 |---|---|
 | Frontend | Next.js 14 + React + Framer Motion |
 | Backend | Node.js + Express + TypeScript |
-| Datenbank | PostgreSQL + Prisma |
+| Database | PostgreSQL + Prisma |
 | Blockchain | Cardano Preprod Testnet |
 | Smart Contracts | Aiken → Plutus V3 |
 | Off-Chain SDK | Lucid Evolution |
 | TX Signing | Cardano Serialization Library (CSL) |
-| Provider | Blockfrost (kein eigener Node nötig) |
+| Provider | Blockfrost (no own node required) |
 | Auth | JWT + bcrypt |
 
 ---
 
-## Voraussetzungen
+## Prerequisites
 
-Folgende Programme müssen installiert sein:
+The following tools must be installed:
 
 | Tool | Version | Download |
 |---|---|---|
 | Node.js | ≥ 18 | https://nodejs.org |
-| npm | ≥ 9 | kommt mit Node.js |
+| npm | ≥ 9 | comes with Node.js |
 | PostgreSQL | ≥ 14 | https://www.postgresql.org/download |
-| Git | aktuell | https://git-scm.com |
+| Git | current | https://git-scm.com |
 
-Ausserdem benötigt:
+Also required:
 
-- **Blockfrost Account** (kostenlos) → https://blockfrost.io
-- **Eternl Wallet** Browser-Extension (Chrome/Brave) → https://eternl.io
-- **tADA** (Test-ADA) für das Admin-Wallet → Cardano Preprod Faucet
+- **Blockfrost Account** (free) → https://blockfrost.io
+- **Eternl Wallet** Browser Extension (Chrome/Brave) → https://eternl.io
+- **tADA** (Test-ADA) for the admin wallet → Cardano Preprod Faucet
 
 ---
 
-## Projektstruktur
+## Project Structure
 
 ```
 talentchain/
@@ -80,50 +80,50 @@ talentchain/
 │   │   │   └── auth.ts          # JWT + Admin Middleware
 │   │   └── routes/
 │   │       ├── auth.ts          # Register / Login
-│   │       ├── admin.ts         # User-Verwaltung, L1, Blacklist
-│   │       ├── match.ts         # Match-Events
-│   │       ├── rewards.ts       # Reward-Verteilung
-│   │       └── referral.ts      # Referral-Kette
+│   │       ├── admin.ts         # User management, L1, Blacklist
+│   │       ├── match.ts         # Match events
+│   │       ├── rewards.ts       # Reward distribution
+│   │       └── referral.ts      # Referral chain
 │   ├── chain/
 │   │   ├── blockfrost.ts        # Blockfrost Provider
-│   │   ├── cardano-tx.ts        # TX-Bau via CSL
-│   │   ├── chain-utils.ts       # Invite-Codes, Kaskaden-Entfernung
-│   │   ├── datum-decoder.ts     # CBOR Datum Dekodierung
-│   │   ├── mint-nft.ts          # Identity NFT Minting (Lucid)
-│   │   ├── referral-chain.ts    # On-Chain Traversal, UTxO erstellen
-│   │   ├── referral-traversal.ts # Reward-Berechnung
-│   │   ├── registration-bonus.ts # Registrierungsbonus (CHF 60)
-│   │   ├── send-rewards.ts      # Reward TX senden
-│   │   ├── tx-signer.ts         # CSL Signing Helper
-│   │   └── wallet.ts            # Admin-Wallet aus Seed Phrase
+│   │   ├── cardano-tx.ts        # TX construction via CSL
+│   │   ├── chain-utils.ts       # Invite codes, cascade removal
+│   │   ├── datum-decoder.ts     # CBOR datum decoding
+│   │   ├── mint-nft.ts          # Identity NFT minting (Lucid)
+│   │   ├── referral-chain.ts    # On-chain traversal, UTxO creation
+│   │   ├── referral-traversal.ts # Reward calculation
+│   │   ├── registration-bonus.ts # Registration bonus (CHF 60)
+│   │   ├── send-rewards.ts      # Send reward TX
+│   │   ├── tx-signer.ts         # CSL signing helper
+│   │   └── wallet.ts            # Admin wallet from seed phrase
 │   ├── prisma/
-│   │   ├── schema.prisma        # Datenbankschema
-│   │   └── client.ts            # Prisma Client
+│   │   ├── schema.prisma        # Database schema
+│   │   └── client.ts            # Prisma client
 │   ├── scripts/
-│   │   ├── seed-admin.ts        # Admin-Account erstellen
-│   │   └── assign-invite-codes.ts # Migration: Invite-Codes vergeben
-│   └── server.ts                # Express App Entry Point
+│   │   ├── seed-admin.ts        # Create admin account
+│   │   └── assign-invite-codes.ts # Migration: assign invite codes
+│   └── server.ts                # Express app entry point
 ├── contracts/
-│   └── plutus.json              # Kompilierte Aiken Smart Contracts
+│   └── plutus.json              # Compiled Aiken smart contracts
 ├── frontend/
 │   ├── app/
-│   │   ├── dashboard/           # Dashboard Pages
-│   │   ├── login/               # Login Page
-│   │   └── page.tsx             # Landing Page
+│   │   ├── dashboard/           # Dashboard pages
+│   │   ├── login/               # Login page
+│   │   └── page.tsx             # Landing page
 │   ├── components/
-│   │   ├── dashboard/           # Dashboard-Komponenten
-│   │   └── ui/                  # Wiederverwendbare UI-Komponenten
+│   │   ├── dashboard/           # Dashboard components
+│   │   └── ui/                  # Reusable UI components
 │   └── lib/
-│       ├── api.ts               # API Client
-│       └── scenarios.ts         # Szenarien & Fee-Berechnung
+│       ├── api.ts               # API client
+│       └── scenarios.ts         # Scenarios & fee calculation
 └── README.md
 ```
 
 ---
 
-## Setup — Schritt für Schritt
+## Setup — Step by Step
 
-### 1. Repository klonen
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
@@ -132,7 +132,7 @@ cd talentchain
 
 ---
 
-### 2. Abhängigkeiten installieren
+### 2. Install Dependencies
 
 **Backend:**
 ```bash
@@ -148,37 +148,37 @@ npm install
 
 ---
 
-### 3. Cardano Wallet einrichten
+### 3. Set Up the Cardano Wallet
 
-Das Backend braucht ein **Admin-Wallet** mit einer Seed Phrase. Dieses Wallet signiert alle Blockchain-Transaktionen (NFT Minting, Referral UTxOs, Reward-Zahlungen).
+The backend requires an **admin wallet** with a seed phrase. This wallet signs all blockchain transactions (NFT minting, referral UTxOs, reward payments).
 
-#### Option A — Neues Wallet in Eternl erstellen (empfohlen)
+#### Option A — Create a New Wallet in Eternl (recommended)
 
-1. Eternl Browser-Extension installieren: https://eternl.io
-2. Eternl öffnen → **"Add Wallet"** → **"Create new wallet"**
-3. Seed Phrase (24 Wörter) sicher notieren — diese kommt in die `.env`
-4. Im Wallet: oben rechts auf das Netzwerk-Symbol → **"Preprod"** wählen
-5. Wallet-Adresse kopieren (beginnt mit `addr_test1...`)
+1. Install the Eternl browser extension: https://eternl.io
+2. Open Eternl → **"Add Wallet"** → **"Create new wallet"**
+3. Safely record the seed phrase (24 words) — this goes into your `.env`
+4. In the wallet: click the network icon (top right) → select **"Preprod"**
+5. Copy your wallet address (starts with `addr_test1...`)
 
-#### tADA besorgen (Test-ADA für Transaktionsgebühren)
+#### Get tADA (Test-ADA for transaction fees)
 
-Das Admin-Wallet braucht tADA für Gebühren. Mindestens **10 tADA** empfohlen.
+The admin wallet needs tADA to pay for fees. At least **10 tADA** is recommended.
 
-1. Cardano Preprod Faucet öffnen: https://docs.cardano.org/cardano-testnets/tools/faucet
-2. Netzwerk **"Preprod"** wählen
-3. Wallet-Adresse einfügen → **"Request funds"**
-4. Nach ca. 1–2 Minuten erscheinen die tADA im Wallet
+1. Open the Cardano Preprod Faucet: https://docs.cardano.org/cardano-testnets/tools/faucet
+2. Select network **"Preprod"**
+3. Paste your wallet address → click **"Request funds"**
+4. The tADA will appear in your wallet after about 1–2 minutes
 
-#### Payment Key Hash (PKH) ermitteln
+#### Determine the Payment Key Hash (PKH)
 
-Der PKH wird für die Smart Contracts benötigt. Nach dem Setup (Schritt 5–6) ausführen:
+The PKH is required for the smart contracts. Run this after completing steps 5–6:
 
 ```bash
 cd backend
 npx ts-node chain/get-pkh.ts
 ```
 
-Oder im laufenden Backend über die API:
+Or via the API while the backend is running:
 ```bash
 curl -X POST http://localhost:3001/api/admin/pkh \
   -H "Content-Type: application/json" \
@@ -187,125 +187,125 @@ curl -X POST http://localhost:3001/api/admin/pkh \
 
 ---
 
-### 4. Blockfrost API Key holen
+### 4. Get a Blockfrost API Key
 
-Blockfrost ersetzt einen eigenen Cardano-Node und ist kostenlos nutzbar.
+Blockfrost replaces the need for your own Cardano node and is free to use.
 
-1. Account erstellen: https://blockfrost.io
+1. Create an account: https://blockfrost.io
 2. Dashboard → **"+ Add new project"**
 3. Name: `TalentChain`, Network: **`Cardano Preprod`** → **"Save"**
-4. Den generierten API Key kopieren (beginnt mit `preprod...`)
+4. Copy the generated API key (starts with `preprod...`)
 
 ---
 
-### 5. Umgebungsvariablen konfigurieren
+### 5. Configure Environment Variables
 
-Im `backend/` Ordner eine `.env` Datei erstellen:
+Create a `.env` file in the `backend/` folder:
 
 ```bash
 cd backend
-cp .env.example .env   # falls vorhanden, sonst neu erstellen
+cp .env.example .env   # if it exists, otherwise create a new one
 ```
 
-`.env` Inhalt — alle Werte müssen ausgefüllt werden:
+`.env` contents — all values must be filled in:
 
 ```env
 # ── Blockfrost ──────────────────────────────────────────────────────
-BLOCKFROST_API_KEY=preprod...          # Von Schritt 4
+BLOCKFROST_API_KEY=preprod...          # From step 4
 
 # ── Cardano ─────────────────────────────────────────────────────────
 CARDANO_NETWORK=preprod
 
 # ── Admin Wallet ────────────────────────────────────────────────────
-ADMIN_SEED_PHRASE=wort1 wort2 wort3 ... wort24   # 24-Wörter Seed Phrase
-ADMIN_ADDRESS=addr_test1...                       # Wallet-Adresse
-ADMIN_WALLET_PKH=561fe5dc...                      # Payment Key Hash (Hex)
+ADMIN_SEED_PHRASE=word1 word2 word3 ... word24   # 24-word seed phrase
+ADMIN_ADDRESS=addr_test1...                       # Wallet address
+ADMIN_WALLET_PKH=561fe5dc...                      # Payment Key Hash (hex)
 
-# ── Datenbank ───────────────────────────────────────────────────────
+# ── Database ────────────────────────────────────────────────────────
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/talentchain"
 
 # ── Auth ────────────────────────────────────────────────────────────
-JWT_SECRET=ein_langes_zufaelliges_geheimnis_hier_einsetzen
+JWT_SECRET=enter_a_long_random_secret_here
 
 # ── Server ──────────────────────────────────────────────────────────
 PORT=3001
 FRONTEND_URL=http://localhost:3000
 
-# ── Admin Seed (für seed-admin.ts Skript) ───────────────────────────
+# ── Admin Seed (for seed-admin.ts script) ───────────────────────────
 SEED_ADMIN_EMAIL=admin@talentchain.ch
-SEED_ADMIN_PASSWORD=sicherespasswort
-SEED_ADMIN_WALLET=addr_test1...        # Gleiche Adresse wie ADMIN_ADDRESS
+SEED_ADMIN_PASSWORD=securepassword
+SEED_ADMIN_WALLET=addr_test1...        # Same address as ADMIN_ADDRESS
 ```
 
->**Wichtig:** Die `.env` Datei niemals in Git committen. Sie enthält die Seed Phrase — wer die Seed Phrase kennt, kontrolliert das Admin-Wallet.
+> **Important:** Never commit the `.env` file to Git. It contains the seed phrase — anyone who knows the seed phrase controls the admin wallet.
 
 ---
 
-### 6. Datenbank einrichten
+### 6. Set Up the Database
 
-PostgreSQL muss laufen. Datenbank erstellen und Schema migrieren:
+PostgreSQL must be running. Create the database and run migrations:
 
 ```bash
-# Datenbank erstellen (falls nicht vorhanden)
+# Create database (if it doesn't exist)
 createdb talentchain
 
-# Schema migrieren
+# Run schema migration
 cd backend
 npx prisma migrate deploy
 
-# Prisma Client generieren
+# Generate Prisma client
 npx prisma generate
 ```
 
-Datenbank prüfen (optional):
+Verify the database (optional):
 ```bash
 npx prisma studio
-# Öffnet Browser-UI auf http://localhost:5555
+# Opens browser UI at http://localhost:5555
 ```
 
 ---
 
-### 7. Admin-Account erstellen
+### 7. Create the Admin Account
 
-Das Seed-Skript erstellt den ersten Admin-User in der Datenbank. Die Werte kommen aus der `.env` (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_WALLET`).
+The seed script creates the first admin user in the database. Values are taken from your `.env` (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_WALLET`).
 
 ```bash
 cd backend
 npx ts-node scripts/seed-admin.ts
 ```
 
-Erwartete Ausgabe:
+Expected output:
 ```
 TalentChain — Admin Seed Script
 ─────────────────────────────────
-✓ Neuer Admin erstellt: admin@talentchain.ch
+✓ New admin created: admin@talentchain.ch
 
   Email:    admin@talentchain.ch
-  Passwort: sicherespasswort
+  Password: securepassword
   Wallet:   addr_test1qptplew...
 
-→ Einloggen auf http://localhost:3000/login
+→ Log in at http://localhost:3000/login
 ```
 
 ---
 
-### 8. Smart Contracts deployen
+### 8. Deploy Smart Contracts
 
-Die kompilierten Contracts liegen in `contracts/plutus.json`. Vor dem ersten Start prüfen ob die Datei vorhanden ist:
+The compiled contracts are located in `contracts/plutus.json`. Before the first start, verify the file exists:
 
 ```bash
 ls contracts/plutus.json
 ```
 
-Falls die Contracts neu kompiliert werden müssen (erfordert [Aiken](https://aiken-lang.org/installation-instructions)):
+If the contracts need to be recompiled (requires [Aiken](https://aiken-lang.org/installation-instructions)):
 
 ```bash
 cd contracts
 aiken build
-# Generiert plutus.json
+# Generates plutus.json
 ```
 
-Contract-Adressen prüfen (nach dem Backend-Start):
+Check contract addresses (after the backend has started):
 ```bash
 curl http://localhost:3001/api/admin/referral-script-address \
   -H "Authorization: Bearer <admin-token>"
@@ -313,16 +313,16 @@ curl http://localhost:3001/api/admin/referral-script-address \
 
 ---
 
-### 9. Backend starten
+### 9. Start the Backend
 
 ```bash
 cd backend
 npm run dev
 ```
 
-Backend läuft auf: `http://localhost:3001`
+Backend runs at: `http://localhost:3001`
 
-Health-Check:
+Health check:
 ```bash
 curl http://localhost:3001/health
 # {"status":"ok","network":"preprod"}
@@ -330,89 +330,89 @@ curl http://localhost:3001/health
 
 ---
 
-### 10. Frontend starten
+### 10. Start the Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend läuft auf: `http://localhost:3000`
+Frontend runs at: `http://localhost:3000`
 
 ---
 
-## Wallet für Browser einrichten
+## Set Up a Browser Wallet
 
-Für das **Frontend** (Wallet verbinden auf der Landing Page) braucht jeder User eine Browser-Wallet auf dem Preprod Testnet.
+For the **frontend** (connecting a wallet on the landing page), each user needs a browser wallet on the Preprod Testnet.
 
-1. **Eternl** installieren: https://eternl.io
-2. Eternl öffnen → neues Wallet erstellen oder bestehende Seed Phrase importieren
-3. Netzwerk wechseln: Einstellungen → **"Preprod Testnet"**
-4. tADA holen: https://docs.cardano.org/cardano-testnets/tools/faucet
-5. Auf `http://localhost:3000` → **"Wallet verbinden"** klicken
+1. Install **Eternl**: https://eternl.io
+2. Open Eternl → create a new wallet or import an existing seed phrase
+3. Switch network: Settings → **"Preprod Testnet"**
+4. Get tADA: https://docs.cardano.org/cardano-testnets/tools/faucet
+5. Go to `http://localhost:3000` → click **"Connect Wallet"**
 
-Unterstützte Wallets:
+Supported wallets:
 
 | Wallet | Download |
 |---|---|
-| Eternl (empfohlen) | https://eternl.io |
+| Eternl (recommended) | https://eternl.io |
 | Nami | https://namiwallet.io |
 | Lace | https://www.lace.io |
 
 ---
 
-## Ersten L1 Ambassador erstellen
+## Create the First L1 Ambassador
 
-Damit das Referral-System funktioniert, braucht es mindestens einen **L1 Ambassador** — die erste Person in der Einladungskette.
+For the referral system to work, at least one **L1 Ambassador** is needed — the first person in the invitation chain.
 
-1. Als Admin einloggen: `http://localhost:3000/login`
-2. Dashboard → **"User Verwaltung"**
-3. Gewünschten User suchen → **"L1 machen"** klicken
-4. Das Backend erstellt automatisch:
-   - On-Chain UTxO mit `inviter = None` (= Root)
-   - DB-Eintrag als L1_AMBASSADOR
-   - Einzigartigen Invite-Code (Format: `TC-XXXXXX`)
-5. Der L1 Ambassador kann seinen Invite-Code teilen → neue User registrieren sich damit
+1. Log in as admin: `http://localhost:3000/login`
+2. Dashboard → **"User Management"**
+3. Find the desired user → click **"Make L1"**
+4. The backend automatically creates:
+   - An on-chain UTxO with `inviter = None` (= Root)
+   - A DB entry as `L1_AMBASSADOR`
+   - A unique invite code (format: `TC-XXXXXX`)
+5. The L1 Ambassador can share their invite code → new users register with it
 
 ---
 
-## Umgebungsvariablen Referenz
+## Environment Variables Reference
 
-| Variable | Pflicht | Beschreibung |
+| Variable | Required | Description |
 |---|---|---|
-| `BLOCKFROST_API_KEY` | ja | API Key von blockfrost.io (Preprod) |
-| `CARDANO_NETWORK` | ja | Immer `preprod` |
-| `ADMIN_SEED_PHRASE` | ja | 24-Wörter Seed Phrase des Admin-Wallets |
-| `ADMIN_ADDRESS` | ja | Bech32-Adresse des Admin-Wallets (`addr_test1...`) |
-| `ADMIN_WALLET_PKH` | ja | Payment Key Hash (Hex) des Admin-Wallets |
-| `DATABASE_URL` | ja | PostgreSQL Connection String |
-| `JWT_SECRET` | ja | Geheimer Schlüssel für JWT Token (beliebig langer String) |
-| `PORT` | ja | Backend Port (Standard: `3001`) |
-| `FRONTEND_URL` | ja | URL des Frontends (Standard: `http://localhost:3000`) |
-| `SEED_ADMIN_EMAIL` | nur Seed | E-Mail für seed-admin.ts Skript |
-| `SEED_ADMIN_PASSWORD` | nur Seed | Passwort für seed-admin.ts Skript |
-| `SEED_ADMIN_WALLET` | nur Seed | Wallet-Adresse für seed-admin.ts Skript |
+| `BLOCKFROST_API_KEY` | yes | API key from blockfrost.io (Preprod) |
+| `CARDANO_NETWORK` | yes | Always `preprod` |
+| `ADMIN_SEED_PHRASE` | yes | 24-word seed phrase of the admin wallet |
+| `ADMIN_ADDRESS` | yes | Bech32 address of the admin wallet (`addr_test1...`) |
+| `ADMIN_WALLET_PKH` | yes | Payment Key Hash (hex) of the admin wallet |
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `JWT_SECRET` | yes | Secret key for JWT tokens (any long string) |
+| `PORT` | yes | Backend port (default: `3001`) |
+| `FRONTEND_URL` | yes | Frontend URL (default: `http://localhost:3000`) |
+| `SEED_ADMIN_EMAIL` | seed only | Email for the seed-admin.ts script |
+| `SEED_ADMIN_PASSWORD` | seed only | Password for the seed-admin.ts script |
+| `SEED_ADMIN_WALLET` | seed only | Wallet address for the seed-admin.ts script |
 
 ---
 
-## Technologie-Stack
+## Technology Stack
 
-| Schicht | Technologie | Warum |
+| Layer | Technology | Why |
 |---|---|---|
-| Smart Contracts | Aiken → Plutus V3 | Einzige produktionsreife Cardano-Sprache |
-| Off-Chain SDK | Lucid Evolution | Battle-tested, Plutus V3, grosse Community |
-| TX-Signing | CSL (Emurgo) | Direkte Kontrolle für Zahlungen |
-| Provider | Blockfrost | Kein eigener Node nötig |
-| Backend | Node.js + TypeScript | Selbe Sprache wie Frontend |
-| Datenbank | PostgreSQL + Prisma | Typsichere Queries, relationale Daten |
-| Auth | JWT + bcrypt | Stateless, sicher |
-| Frontend | Next.js 14 + React | Industriestandard |
-| Wallet | CIP-30 (Eternl/Nami/Lace) | Cardano Browser-Standard |
-| Testnet | Cardano Preprod | Offizielle Testumgebung |
+| Smart Contracts | Aiken → Plutus V3 | The only production-ready Cardano language |
+| Off-Chain SDK | Lucid Evolution | Battle-tested, Plutus V3, large community |
+| TX Signing | CSL (Emurgo) | Direct control for payments |
+| Provider | Blockfrost | No own node required |
+| Backend | Node.js + TypeScript | Same language as frontend |
+| Database | PostgreSQL + Prisma | Type-safe queries, relational data |
+| Auth | JWT + bcrypt | Stateless, secure |
+| Frontend | Next.js 14 + React | Industry standard |
+| Wallet | CIP-30 (Eternl/Nami/Lace) | Cardano browser standard |
+| Testnet | Cardano Preprod | Official test environment |
 
 ---
 
-## Architektur
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -422,7 +422,7 @@ Damit das Referral-System funktioniert, braucht es mindestens einen **L1 Ambassa
                          │ REST API (JWT)
 ┌────────────────────────▼────────────────────────────────┐
 │  Backend  (Node.js + Express + TypeScript)              │
-│  Auth  ·  Match-Events  ·  Rewards  ·  Admin            │
+│  Auth  ·  Match Events  ·  Rewards  ·  Admin            │
 │                                                         │
 │  ┌──────────────────┐    ┌──────────────────────────┐   │
 │  │  PostgreSQL       │    │  Chain Layer             │   │
@@ -437,44 +437,44 @@ Damit das Referral-System funktioniert, braucht es mindestens einen **L1 Ambassa
 │                                                         │
 │  identity_minting_policy  →  Identity NFTs              │
 │  referral_registry        →  Referral UTxOs (Datum)     │
-│  reward_distributor       →  Reward Verifikation        │
+│  reward_distributor       →  Reward Verification        │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**On-Chain** (Blockchain): Identity NFTs, Referral-Beziehungen als UTxOs, Reward-Transaktionen
+**On-Chain** (Blockchain): Identity NFTs, referral relationships as UTxOs, reward transactions
 
-**Off-Chain** (Backend + DB): User-Daten, Matching-Logik, Reward-Berechnung, Ketten-Traversal
+**Off-Chain** (Backend + DB): User data, matching logic, reward calculation, chain traversal
 
 ---
 
-## Häufige Fehler
+## Common Errors
 
-**`ADMIN_SEED_PHRASE nicht in .env gesetzt`**
-→ `.env` Datei fehlt oder Seed Phrase nicht eingetragen. Schritt 5 wiederholen.
+**`ADMIN_SEED_PHRASE not set in .env`**
+→ The `.env` file is missing or the seed phrase hasn't been entered. Repeat step 5.
 
-**`Keine UTxOs gefunden`**
-→ Das Admin-Wallet hat kein tADA. Faucet nutzen: https://docs.cardano.org/cardano-testnets/tools/faucet
+**`No UTxOs found`**
+→ The admin wallet has no tADA. Use the faucet: https://docs.cardano.org/cardano-testnets/tools/faucet
 
-**`TX nach 120s noch nicht bestätigt`**
-→ Preprod Testnet kann langsam sein. Warten und erneut versuchen. TX-Hash auf https://preprod.cardanoscan.io prüfen.
+**`TX not confirmed after 120s`**
+→ The Preprod Testnet can be slow. Wait and try again. Check the TX hash at https://preprod.cardanoscan.io.
 
-**`identity_minting_policy nicht gefunden`**
-→ `contracts/plutus.json` fehlt oder ist leer. Contracts neu bauen: `cd contracts && aiken build`
+**`identity_minting_policy not found`**
+→ `contracts/plutus.json` is missing or empty. Rebuild contracts: `cd contracts && aiken build`
 
 **`Prisma: Table does not exist`**
-→ Migration nicht ausgeführt. `npx prisma migrate deploy` im `backend/` Ordner ausführen.
+→ Migration not executed. Run `npx prisma migrate deploy` in the `backend/` folder.
 
-**`HTTP 400: Wallet hat bereits einen Identity NFT`**
-→ Diese Wallet ist bereits registriert. Andere Wallet-Adresse für den Test verwenden.
+**`HTTP 400: Wallet already has an Identity NFT`**
+→ This wallet is already registered. Use a different wallet address for testing.
 
 **`Blockfrost: 403 Forbidden`**
-→ API Key falsch oder falsches Netzwerk. Key muss für **Preprod** sein, nicht Mainnet.
+→ API key is wrong or using the wrong network. The key must be for **Preprod**, not Mainnet.
 
 ---
 
-## Nützliche Links
+## Useful Links
 
-| Ressource | URL |
+| Resource | URL |
 |---|---|
 | Preprod Explorer | https://preprod.cardanoscan.io |
 | Preprod Faucet | https://docs.cardano.org/cardano-testnets/tools/faucet |
@@ -485,4 +485,4 @@ Damit das Referral-System funktioniert, braucht es mindestens einen **L1 Ambassa
 
 ---
 
-*TalentChain v1.0 · Cardano Preprod Testnet · Mai 2026*
+*TalentChain v1.0 · Cardano Preprod Testnet · May 2026*
